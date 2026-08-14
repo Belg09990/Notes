@@ -1,0 +1,138 @@
+import json
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QTextEdit, QListWidget, QLineEdit, QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox, QRadioButton, QInputDialog
+app = QApplication([])
+main_win = QWidget()
+main_win.resize(1100, 700)
+main_win.setWindowTitle('Умные заметки')
+v_line = QHBoxLayout()
+v1_line = QVBoxLayout()
+v2_line = QVBoxLayout()
+g_line = QHBoxLayout()
+g2_line = QHBoxLayout()
+lists = QListWidget()
+lists_tag = QListWidget()
+text = QTextEdit()
+tag = QLineEdit()
+tag.setPlaceholderText('Введите тег...')
+lis = QLabel('Список заметок')
+lis_tag = QLabel('Список тегов')
+create = QPushButton('Создать заметку')
+delate = QPushButton('Удалить заметку')
+save = QPushButton('Сохранить заметку')
+give = QPushButton('Добавить к заметке')
+unpin = QPushButton('Открепить от заметки')
+search = QPushButton('Искать заметки по тегу')
+
+v1_line.addWidget(text)
+v2_line.addWidget(lis)
+v2_line.addWidget(lists)
+g_line.addWidget(create)
+g_line.addWidget(delate)
+v2_line.addLayout(g_line)
+v2_line.addWidget(save)
+v2_line.addWidget(lis_tag)
+v2_line.addWidget(lists_tag)
+v2_line.addWidget(tag)
+g2_line.addWidget(give)
+g2_line.addWidget(unpin)
+v2_line.addLayout(g2_line)
+v2_line.addWidget(search)
+v_line.addLayout(v1_line)
+v_line.addLayout(v2_line)
+main_win.setLayout(v_line)
+notes = {
+    'Название заметки':
+    {
+        'текст' : 'Очень важный текст заметки',
+        'теги' : ['черновик', 'мысли']
+    }
+}
+with open('f.json', 'w', encoding='utf-8') as file:
+    json.dump(notes, file, ensure_ascii = False)
+def show_note():
+    name = lists.selectedItems()[0].text()
+    text.setText(notes[name]['текст'])
+    lists_tag.clear()
+    lists_tag.addItems(notes[name]['теги'])
+with open('f.json', 'r', encoding = 'utf-8') as file:
+    notes = json.load(file)
+lists.addItems(notes)
+lists.itemClicked.connect(show_note)
+
+def add_note():
+    note_name, ok = QInputDialog.getText(main_win, 'Добавить заметку', 'Название заметки:')
+    if ok and note_name != '':
+        notes[note_name] = {'текст': '', 'теги': [] }
+        lists.addItem(note_name)
+        lists_tag.addItems(notes[note_name]['теги'])
+
+def del_note():
+    if lists.selectedItems():
+        key = lists.selectedItems()[0].text()
+        del notes[key]
+        lists.clear()
+        lists_tag.clear()
+        text.clear()
+        lists.addItems(notes)
+        with open('f.json', 'w', encoding = 'utf-8') as file:
+            json.dump(notes, file, sort_keys = True, ensure_ascii=False)
+        
+def save_note():
+    if lists.selectedItems():
+        key = lists.selectedItems()[0].text()
+        notes[key]['текст'] = text.toPlainText()
+        with open('f.json', 'w', encoding = 'utf-8') as file:
+            json.dump(notes, file, sort_keys = True, ensure_ascii=False)
+
+
+def add_tag():
+    if lists.selectedItems():
+        key = lists.selectedItems()[0].text()
+        tags = tag.text()
+        if not tags in notes[key]['теги']:
+            notes[key]['теги'].append(tags)
+            lists_tag.addItem(tags)
+            tag.clear()
+        with open('f.json', 'w', encoding = 'utf-8') as file:
+            json.dump(notes, file, sort_keys = True, ensure_ascii=False)
+    else:
+        print('Заметка для добавления тега не выбрана!')
+
+def del_tag():
+    if lists.selectedItems():
+        key = lists.selectedItems()[0].text()
+        tag = lists_tag.selectedItems()[0].text()
+        notes[key]['теги'].remove(tag)
+        lists_tag.clear()
+        lists_tag.addItems(notes[key]['теги'])
+        with open('f.json', 'w', encoding = 'utf-8') as file:
+            json.dump(notes, file, sort_keys = True, ensure_ascii=False)
+
+def search_tag():
+    tags = tag.text()
+    if search.text() == 'Искать заметки по тегу' and tags:
+        notes_filtered = {}
+        for note in notes:
+            if tags in notes[note]['теги']:
+                notes_filtered[note]=notes[note]
+        search.setText('Сбросить поиск')
+        lists.clear()
+        lis_tag.clear()
+        lists.addItems(notes_filtered)
+    elif search.text() == 'Сбросить поиск':
+        tag.clear()
+        lists.clear()
+        lists_tag.clear()
+        lists.addItems(notes)
+        search.setText('Искать заметки по тегу')
+    else:
+        pass
+create.clicked.connect(add_note)
+delate.clicked.connect(del_note)
+save.clicked.connect(save_note)
+give.clicked.connect(add_tag)
+unpin.clicked.connect(del_tag)
+search.clicked.connect(search_tag)
+main_win.show()
+app.exec_()
