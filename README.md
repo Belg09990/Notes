@@ -1,5 +1,6 @@
 # Notes
 **About the application**
+
 A note‑taking app. You can give a note its own tag.
 
 
